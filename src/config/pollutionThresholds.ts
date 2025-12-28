@@ -10,6 +10,7 @@
  * - Easy to modify: Thay đổi ngưỡng không cần sửa code logic
  * - Type-safe: Enum + const để đảm bảo type safety
  */
+import { COLORS } from './colors';
 
 
 export const PollutionLevel = {
@@ -27,6 +28,7 @@ export interface PollutionThresholds {
     readonly max: number;
     readonly label: string;
     readonly description: string;
+    readonly color: string;
 }
 
 /**
@@ -47,24 +49,28 @@ export const POLLUTION_THRESHOLDS: Record<PollutionLevel, PollutionThresholds> =
         max: 20,
         label: 'clean',
         description: 'Trái Đất trong lành, không khí sạch',
+        color: COLORS.ui.success,
     },
     [PollutionLevel.LIGHT]: {
         min: 21,
         max: 50,
         label: 'light',
         description: 'Bắt đầu xuất hiện ô nhiễm nhẹ',
+        color: COLORS.ui.accent,
     },
     [PollutionLevel.MODERATE]: {
         min: 51,
         max: 80,
         label: 'moderate',
         description: 'Ô nhiễm trung bình, cần hành động',
+        color: COLORS.ui.warning,
     },
     [PollutionLevel.SEVERE]: {
         min: 81,
         max: 100,
         label: 'severe',
         description: 'Ô nhiễm nghiêm trọng, nguy hiểm',
+        color: COLORS.ui.error,
     },
 } as const;
 
