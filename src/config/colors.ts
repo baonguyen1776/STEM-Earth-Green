@@ -21,9 +21,10 @@
  * Màu sắc cho mô hình Trái Đất ở các trạng thái khác nhau
  */
 export const EARTH_COLORS = {
-    clean: '#1e90ff',
-    polluted: '#4a4a4a',
-    land: '#2d5016',
+    clean: '#4a9eff',      // Xanh dương tươi sáng
+    polluted: '#3d3228',   // Nâu xám chết chóc
+    land: '#2d5016',       // Xanh lá đất
+    landPolluted: '#8b4513', // Nâu khô cằn
     desert: '#c2b280',
 } as const
 
@@ -33,20 +34,22 @@ export const EARTH_COLORS = {
  * Màu sắc đại dương
  */
 export const OCEAN_COLORS = {
-    clean: '#006994',
-    polluted: '#2c2c2c',
+    clean: '#0077be',      // Xanh đại dương rực rỡ
+    polluted: '#1a1a1a',   // Đen đục ngầu
     foam: '#ffffff',
 } as const
 
 /**
  * Atmosphere Colors
  * 
- * Màu sắc bầu khí quyển
+ * Màu sắc bầu khí quyển - CRITICAL cho visual impact
  */
 export const ATMOSPHERE_COLORS = {
-    clean: '#87ceeb',
-    polluted: '#666666',
+    clean: '#1e90ff',      // Xanh lam rực rỡ (dodger blue)
+    polluted: '#4a4a4a',   // Xám nâu chì đục ngầu
+    smog: '#2d2418',       // Màu khói bụi nặng
     clouds: '#f0f0f0',
+    cloudsPolluted: '#3a3a3a', // Mây biến thành smog
 } as const
 
 /**
@@ -56,6 +59,7 @@ export const ATMOSPHERE_COLORS = {
  */
 export const EFFECT_COLORS = {
     smoke: '#808080',
+    smokeDense: '#1a1a1a',  // Khói đen đặc
     plasticTrash: '#ff6b6b',
     metalTrash: '#a8a8a8',
     organicTrash: '#8b4513',

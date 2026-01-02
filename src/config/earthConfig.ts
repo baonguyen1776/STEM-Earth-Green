@@ -24,8 +24,8 @@ export const EARTH_GEOMETRY = {
  * Cấu hình Animation Trái Đất
  */
 export const EARTH_ANIMATION = {
-    rotationSpeed: 0.001,
-    idleRotationSpeed: 0.0005,
+    rotationSpeed: 0.1,        // radians per second (tăng từ 0.001)
+    idleRotationSpeed: 0.05,   // radians per second when idle
 } as const;
 
 /**
@@ -38,14 +38,14 @@ export const EARTH_POSITION = {
 } as const;
 
 /**
- * Cấu hình Material Trái Đất
+ * Cấu hình Material Trái Đất - PBR settings for realistic rendering
  */
 export const EARTH_MATERIAL = {
-    roughness: 1,
-    metalness: 0,
+    roughness: 0.6,     // Base roughness - ocean will be shinier via specular map
+    metalness: 0,       // Earth surface is not metallic
     castShadow: true,
     receiveShadow: true,
-    normalScale: 0.05,
+    normalScale: 0.8,   // Strong normal map for mountain/terrain shadows
 } as const;
 
 /**
@@ -65,7 +65,7 @@ export const EARTH_ASSETS = {
  */
 export const EARTH_CLOUDS = {
     radius: 5.05, // Lớn hơn bán kính trái đất một chút
-    rotationSpeed: 0.0012,
+    rotationSpeed: 0.12, // Mây xoay nhanh hơn Trái Đất một chút
 } as const;
 
 export const EARTH_CONFIG = {
