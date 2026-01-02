@@ -113,7 +113,7 @@ export interface StarfieldConfig {
  */
 export interface SmokeConfig {
     particleCount: number; // Số lượng hạt khói
-    denisty: number; // Mật độ khói
+    density: number; // Mật độ khói
     riseSpeed: number;
     spreadRate: number;
     color: string;
