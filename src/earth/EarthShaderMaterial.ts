@@ -68,22 +68,23 @@ const earthFragmentShader = `
     float lightIntensity = dot(vWorldNormal, lightDirection);
     
     // Create smooth terminator (day/night transition)
-    // -0.2 to 0.2 creates a smooth twilight zone
-    float dayFactor = smoothstep(-0.1, 0.3, lightIntensity);
+    // Điều chỉnh để transition mượt hơn
+    float dayFactor = smoothstep(-0.15, 0.25, lightIntensity);
     float nightFactor = 1.0 - dayFactor;
     
     // === DAY SIDE ===
     vec3 dayResult = dayColor.rgb;
     
-    // Apply diffuse lighting to day side
+    // Apply diffuse lighting to day side - tăng cường độ sáng
     float diffuse = max(lightIntensity, 0.0);
-    dayResult *= (ambientIntensity + diffuse * 0.8);
+    // Tăng ambient và diffuse để sáng hơn
+    dayResult *= (ambientIntensity * 1.5 + diffuse * 1.2);
     
     // Specular highlight on water (if specular map available)
     vec3 viewDir = normalize(-vPosition);
     vec3 reflectDir = reflect(-lightDirection, vNormal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    dayResult += spec * 0.3 * lightColor;
+    dayResult += spec * 0.5 * lightColor;  // Tăng specular để nước sáng bóng hơn
     
     // === NIGHT SIDE ===
     vec3 nightResult = nightColor.rgb;
@@ -92,8 +93,8 @@ const earthFragmentShader = `
     float cityLightBrightness = nightLightIntensity * (1.0 - pollutionLevel * 0.009);
     nightResult *= cityLightBrightness;
     
-    // Add slight ambient to night side so it's not pure black
-    nightResult += dayColor.rgb * 0.03;
+    // Add more ambient to night side để không quá tối
+    nightResult += dayColor.rgb * 0.08;  // Tăng từ 0.03 lên 0.08
     
     // === BLEND DAY AND NIGHT ===
     vec3 finalColor = mix(nightResult, dayResult, dayFactor);
@@ -163,8 +164,8 @@ export class EarthShaderMaterial {
         specularMap: { value: options.specularMap ?? null },
         cloudsMap: { value: options.cloudsMap ?? null },
         lightDirection: { value: this._lightDirection },
-        lightColor: { value: new THREE.Color(0xfff5e6) },
-        ambientIntensity: { value: 0.15 },
+        lightColor: { value: new THREE.Color(0xffffff) },  // Ánh sáng trắng tinh khiết
+        ambientIntensity: { value: 0.35 },
         pollutionLevel: { value: this._pollutionLevel },
         pollutionTint: { value: new THREE.Color(0x4a3828) },
         nightLightIntensity: { value: 1.5 },

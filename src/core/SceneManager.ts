@@ -70,18 +70,18 @@ export interface SceneManagerOptions {
  * Ambient: Base illumination
  */
 const DEFAULT_LIGHTS: Required<LightConfig> = {
-  // AMBIENT - Base illumination
-  ambientIntensity: 0.4,  // Lower for more dramatic contrast
+  // AMBIENT - Base illumination (tăng để Earth sáng hơn)
+  ambientIntensity: 0.6,  // Tăng từ 0.4 để sáng hơn
   ambientColor: COLORS.lights.ambient,
   
   // KEY LIGHT (Sun) - Creates terminator line on Earth
-  directionalIntensity: 2.5,  // Strong for visible light/shadow divide
-  directionalColor: 0xfff5e6,  // Slightly warm sunlight
-  directionalPosition: { x: 10, y: 5, z: 8 },  // Positioned for good terminator
+  directionalIntensity: 3.5,  // Tăng từ 2.5 để ánh sáng mặt trời mạnh hơn
+  directionalColor: 0xffffff,  // Ánh sáng trắng tinh khiết của mặt trời
+  directionalPosition: { x: 5, y: 3, z: 10 },  // Điều chỉnh vị trí để chiếu thẳng hơn
   
   // FILL LIGHT (Back) - Rim lighting for depth
-  backLightIntensity: 0.6,
-  backLightColor: 0x4466aa,  // Cool blue for contrast
+  backLightIntensity: 0.8,  // Tăng để tạo rim light rõ hơn
+  backLightColor: 0x6688cc,  // Cool blue for contrast
   backLightPosition: { x: -8, y: -3, z: -8 },
 }
 
