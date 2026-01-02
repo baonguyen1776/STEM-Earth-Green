@@ -45,7 +45,7 @@
 ## 🖼️ Demo & Screenshots
 
 ### Live Demo
-**URL**: [Sẽ cập nhật sau khi deploy]
+**URL**: [https://baonguyen1776.github.io/STEM-Earth-Green/](https://baonguyen1776.github.io/STEM-Earth-Green/)
 
 ### Video Demo
 [Link video YouTube]
