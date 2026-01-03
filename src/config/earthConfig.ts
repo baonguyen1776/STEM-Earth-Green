@@ -51,13 +51,14 @@ export const EARTH_MATERIAL = {
 /**
  * Cấu hình Texture
  * Đường dẫn tới các texture trong src/assets/textures
+ * Sử dụng relative path để hoạt động với GitHub Pages
  */
 export const EARTH_ASSETS = {
-    dayMap: '/src/assets/textures/2k_earth_daymap.jpg',
-    nightMap: '/src/assets/textures/2k_earth_nightmap.jpg',
-    normalMap: '/src/assets/textures/2k_earth_normal_map.tif',
-    specularMap: '/src/assets/textures/2k_earth_specular_map.tif',
-    cloudMap: '/src/assets/textures/2k_earth_clouds.jpg',
+    dayMap: './src/assets/textures/2k_earth_daymap.jpg',
+    nightMap: './src/assets/textures/2k_earth_nightmap.jpg',
+    normalMap: './src/assets/textures/2k_earth_normal_map.tif',
+    specularMap: './src/assets/textures/2k_earth_specular_map.tif',
+    cloudMap: './src/assets/textures/2k_earth_clouds.jpg',
 } as const;
 
 /**
