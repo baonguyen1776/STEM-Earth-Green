@@ -50,15 +50,16 @@ export const EARTH_MATERIAL = {
 
 /**
  * Cấu hình Texture
- * Đường dẫn tới các texture trong src/assets/textures
- * Sử dụng relative path để hoạt động với GitHub Pages
+ * Đường dẫn tới các texture trong public/textures
+ * Vite sẽ copy files từ public/ vào dist/ khi build
+ * Import.meta.env.BASE_URL sẽ tự động thêm base path khi deploy lên GitHub Pages
  */
 export const EARTH_ASSETS = {
-    dayMap: './src/assets/textures/2k_earth_daymap.jpg',
-    nightMap: './src/assets/textures/2k_earth_nightmap.jpg',
-    normalMap: './src/assets/textures/2k_earth_normal_map.tif',
-    specularMap: './src/assets/textures/2k_earth_specular_map.tif',
-    cloudMap: './src/assets/textures/2k_earth_clouds.jpg',
+    dayMap: `${import.meta.env.BASE_URL}textures/2k_earth_daymap.jpg`,
+    nightMap: `${import.meta.env.BASE_URL}textures/2k_earth_nightmap.jpg`,
+    normalMap: `${import.meta.env.BASE_URL}textures/2k_earth_normal_map.tif`,
+    specularMap: `${import.meta.env.BASE_URL}textures/2k_earth_specular_map.tif`,
+    cloudMap: `${import.meta.env.BASE_URL}textures/2k_earth_clouds.jpg`,
 } as const;
 
 /**
