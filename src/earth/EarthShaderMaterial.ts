@@ -33,12 +33,13 @@ const earthVertexShader = `
 `
 
 /**
- * Fragment Shader
+ * Fragment Shader - Advanced Earth with Camera-Facing Light
  * 
- * Blend dayMap và nightMap based on sun direction
- * - Phần hướng về lightDirection: hiện dayMap
- * - Phần tối (ngược lightDirection): hiện nightMap với city lights
- * - Terminator zone: smooth blend giữa 2 textures
+ * Features:
+ * - Light follows camera direction (front-facing areas are bright)
+ * - High overall brightness
+ * - Pollution texture blending
+ * - Sharp specular on oceans
  */
 const earthFragmentShader = `
   uniform sampler2D dayMap;
@@ -47,10 +48,13 @@ const earthFragmentShader = `
   uniform sampler2D specularMap;
   uniform sampler2D cloudsMap;
   
+  // Pollution texture blending
+  uniform sampler2D pollutedDayMap;
+  
   uniform vec3 lightDirection;
   uniform vec3 lightColor;
   uniform float ambientIntensity;
-  uniform float pollutionLevel;
+  uniform float pollutionLevel; // 0-1 (0-100 scaled)
   uniform vec3 pollutionTint;
   uniform float nightLightIntensity;
   
@@ -60,67 +64,93 @@ const earthFragmentShader = `
   varying vec3 vWorldNormal;
   
   void main() {
-    // Sample textures
-    vec4 dayColor = texture2D(dayMap, vUv);
+    // === TEXTURE SAMPLING ===
+    vec4 cleanDayColor = texture2D(dayMap, vUv);
     vec4 nightColor = texture2D(nightMap, vUv);
+    vec4 specularSample = texture2D(specularMap, vUv);
     
-    // Calculate light intensity based on angle to sun
-    float lightIntensity = dot(vWorldNormal, lightDirection);
+    // Sample pollution texture (fallback to synthetic if not available)
+    vec4 pollutedDayColor = texture2D(pollutedDayMap, vUv);
+    if (pollutedDayColor.a < 0.01) {
+      vec3 desaturated = vec3(dot(cleanDayColor.rgb, vec3(0.3, 0.59, 0.11)));
+      vec3 brownTint = vec3(0.6, 0.5, 0.4);
+      pollutedDayColor = vec4(mix(desaturated, brownTint, 0.5), 1.0);
+    }
     
-    // Create smooth terminator (day/night transition)
-    // Điều chỉnh để transition mượt hơn
-    float dayFactor = smoothstep(-0.15, 0.25, lightIntensity);
-    float nightFactor = 1.0 - dayFactor;
+    // Blend based on pollution level
+    float pollutionFactor = pollutionLevel;
+    vec4 blendedDayColor = mix(cleanDayColor, pollutedDayColor, pollutionFactor);
     
-    // === DAY SIDE ===
-    vec3 dayResult = dayColor.rgb;
-    
-    // Apply diffuse lighting to day side - tăng cường độ sáng
-    float diffuse = max(lightIntensity, 0.0);
-    // Tăng ambient và diffuse để sáng hơn
-    dayResult *= (ambientIntensity * 1.5 + diffuse * 1.2);
-    
-    // Specular highlight on water (if specular map available)
+    // === CAMERA-FACING LIGHTING ===
+    // View direction from camera
     vec3 viewDir = normalize(-vPosition);
-    vec3 reflectDir = reflect(-lightDirection, vNormal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    dayResult += spec * 0.5 * lightColor;  // Tăng specular để nước sáng bóng hơn
+    
+    // Light intensity based on facing camera (front = bright)
+    float lightIntensity = dot(vNormal, viewDir);
+    
+    // Also consider sun direction for day/night
+    float sunIntensity = dot(vWorldNormal, lightDirection);
+    
+    // Combine: front-facing is always lit, plus sun adds more
+    float combinedLight = max(lightIntensity * 0.7, 0.0) + max(sunIntensity * 0.5, 0.0);
+    combinedLight = clamp(combinedLight, 0.0, 1.0);
+    
+    // Day/night based on sun position
+    float dayFactor = smoothstep(-0.2, 0.3, sunIntensity);
+    
+    // === BRIGHT DAYLIGHT SHADING ===
+    vec3 dayResult = blendedDayColor.rgb;
+    
+    // High ambient + strong diffuse for bright appearance
+    float brightAmbient = ambientIntensity * 1.5;
+    dayResult *= brightAmbient + combinedLight * 1.8;
+    
+    // === SPECULAR HIGHLIGHTS (Ocean sparkle) ===
+    vec3 halfDir = normalize(lightDirection + viewDir);
+    float spec = pow(max(dot(vNormal, halfDir), 0.0), 64.0);
+    
+    float isOcean = specularSample.r;
+    float specularStrength = isOcean * (1.0 - pollutionFactor * 0.6);
+    dayResult += spec * specularStrength * 1.2 * lightColor;
     
     // === NIGHT SIDE ===
     vec3 nightResult = nightColor.rgb;
+    float cityBrightness = nightLightIntensity * (1.0 - pollutionFactor * 0.7);
+    nightResult *= cityBrightness;
+    nightResult += blendedDayColor.rgb * 0.05;
     
-    // City lights glow - affected by pollution (smog blocks light)
-    float cityLightBrightness = nightLightIntensity * (1.0 - pollutionLevel * 0.009);
-    nightResult *= cityLightBrightness;
-    
-    // Add more ambient to night side để không quá tối
-    nightResult += dayColor.rgb * 0.08;  // Tăng từ 0.03 lên 0.08
-    
-    // === BLEND DAY AND NIGHT ===
+    // === BLEND DAY/NIGHT ===
     vec3 finalColor = mix(nightResult, dayResult, dayFactor);
     
-    // === APPLY POLLUTION EFFECTS ===
-    // Desaturation
-    float gray = dot(finalColor, vec3(0.299, 0.587, 0.114));
-    float desatAmount = pollutionLevel * 0.006;
-    finalColor = mix(finalColor, vec3(gray), desatAmount);
+    // === RIM LIGHTING ===
+    float rimFactor = 1.0 - max(dot(viewDir, vNormal), 0.0);
+    rimFactor = pow(rimFactor, 2.5);
+    vec3 rimColor = mix(vec3(0.4, 0.6, 1.0), vec3(0.5, 0.4, 0.3), pollutionFactor);
+    finalColor += rimColor * rimFactor * 0.25 * dayFactor;
     
-    // Pollution tint overlay
-    finalColor = mix(finalColor, pollutionTint, pollutionLevel * 0.004);
+    // === POLLUTION TINTING ===
+    if (pollutionFactor > 0.3) {
+      vec3 smogOverlay = vec3(0.75, 0.6, 0.45);
+      float smogIntensity = (pollutionFactor - 0.3) * 0.4;
+      finalColor = mix(finalColor, finalColor * smogOverlay, smogIntensity);
+    }
     
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `
 
 /**
- * Earth Shader Material Options
+ * Earth Shader Material Options - Extended for pollution blending
  */
 export interface EarthShaderMaterialOptions {
-  /** Day texture */
+  /** Day texture (clean) */
   dayMap?: THREE.Texture
   
   /** Night texture (city lights) */
   nightMap?: THREE.Texture
+  
+  /** Polluted day texture */
+  pollutedDayMap?: THREE.Texture
   
   /** Normal map */
   normalMap?: THREE.Texture
@@ -163,10 +193,14 @@ export class EarthShaderMaterial {
         normalMap: { value: options.normalMap ?? null },
         specularMap: { value: options.specularMap ?? null },
         cloudsMap: { value: options.cloudsMap ?? null },
+        
+        // Pollution texture uniforms
+        pollutedDayMap: { value: options.pollutedDayMap ?? null },
+        
         lightDirection: { value: this._lightDirection },
-        lightColor: { value: new THREE.Color(0xffffff) },  // Ánh sáng trắng tinh khiết
-        ambientIntensity: { value: 0.35 },
-        pollutionLevel: { value: this._pollutionLevel },
+        lightColor: { value: new THREE.Color(0xffffff) },  // Pure white sunlight
+        ambientIntensity: { value: 0.25 },  // Lower for cinematic contrast
+        pollutionLevel: { value: this._pollutionLevel / 100 },  // Convert 0-100 to 0-1
         pollutionTint: { value: new THREE.Color(0x4a3828) },
         nightLightIntensity: { value: 1.5 },
       },
@@ -191,25 +225,23 @@ export class EarthShaderMaterial {
 
   // PUBLIC METHODS
   /**
-   * Set pollution level - affects city lights and surface color
+   * Set pollution level - NEW: texture blending approach
    */
   setPollutionLevel(level: number): void {
     if (this._isDisposed) return
     
     this._pollutionLevel = clamp(level, 0, 100)
-    this._material.uniforms.pollutionLevel.value = this._pollutionLevel
+    // Pass as 0-1 to shader
+    this._material.uniforms.pollutionLevel.value = this._pollutionLevel / 100
     
     // Night light intensity decreases with pollution (smog blocks light)
     // 1.5 at clean -> 0.2 at max pollution
     const nightIntensity = lerp(1.5, 0.2, this._pollutionLevel / 100)
     this._material.uniforms.nightLightIntensity.value = nightIntensity
     
-    // Pollution tint shifts from brown to gray-black at severe levels
-    const brownTint = new THREE.Color(0x4a3828)
-    const blackTint = new THREE.Color(0x1a1a1a)
-    const tint = new THREE.Color()
-    tint.lerpColors(brownTint, blackTint, this._pollutionLevel / 100)
-    this._material.uniforms.pollutionTint.value = tint
+    // Ambient intensity decreases with pollution for cinematic contrast
+    const ambientIntensity = lerp(0.25, 0.15, this._pollutionLevel / 100)
+    this._material.uniforms.ambientIntensity.value = ambientIntensity
   }
 
   /**
@@ -222,7 +254,7 @@ export class EarthShaderMaterial {
   }
 
   /**
-   * Apply textures
+   * Apply textures - Extended for pollution blending
    */
   setTextures(textures: {
     dayMap?: THREE.Texture
@@ -230,15 +262,14 @@ export class EarthShaderMaterial {
     normalMap?: THREE.Texture
     specularMap?: THREE.Texture
     cloudsMap?: THREE.Texture
+    pollutedDayMap?: THREE.Texture
   }): void {
     if (this._isDisposed) return
-    
+
     if (textures.dayMap) {
-      textures.dayMap.colorSpace = THREE.SRGBColorSpace
       this._material.uniforms.dayMap.value = textures.dayMap
     }
     if (textures.nightMap) {
-      textures.nightMap.colorSpace = THREE.SRGBColorSpace
       this._material.uniforms.nightMap.value = textures.nightMap
     }
     if (textures.normalMap) {
@@ -249,6 +280,10 @@ export class EarthShaderMaterial {
     }
     if (textures.cloudsMap) {
       this._material.uniforms.cloudsMap.value = textures.cloudsMap
+    }
+    // NEW: Pollution texture support
+    if (textures.pollutedDayMap) {
+      this._material.uniforms.pollutedDayMap.value = textures.pollutedDayMap
     }
   }
 

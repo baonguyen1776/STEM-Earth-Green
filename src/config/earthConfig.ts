@@ -55,11 +55,14 @@ export const EARTH_MATERIAL = {
  * Import.meta.env.BASE_URL sẽ tự động thêm base path khi deploy lên GitHub Pages
  */
 export const EARTH_ASSETS = {
-    dayMap: `${import.meta.env.BASE_URL}textures/2k_earth_daymap.jpg`,
+    dayMap: `${import.meta.env.BASE_URL}textures/2k_earth_day_new.png`,
     nightMap: `${import.meta.env.BASE_URL}textures/2k_earth_nightmap.jpg`,
     normalMap: `${import.meta.env.BASE_URL}textures/2k_earth_normal_map.tif`,
     specularMap: `${import.meta.env.BASE_URL}textures/2k_earth_specular_map.tif`,
     cloudMap: `${import.meta.env.BASE_URL}textures/2k_earth_clouds.jpg`,
+    // Pollution textures
+    pollutedDayMap: `${import.meta.env.BASE_URL}textures/earth-polluted.jpg`,
+    pollutedCloudMap: `${import.meta.env.BASE_URL}textures/clouds-polluted.jpg`,
 } as const;
 
 /**

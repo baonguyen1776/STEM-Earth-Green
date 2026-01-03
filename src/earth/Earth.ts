@@ -153,12 +153,13 @@ export class Earth {
     this._mesh.name = 'earth'
     this._group.add(this._mesh)
     
-    // Create cloud layer
+    // Create cloud layer with texture blending support
     if (options.enableClouds !== false) {
       this._clouds = new CloudLayer({
         ...options.cloudOptions,
         pollutionLevel: this._pollutionLevel,
-        cloudTexture: options.textures?.cloudsMap ?? undefined,
+        cleanCloudTexture: options.textures?.cloudsMap ?? undefined,
+        pollutedCloudTexture: options.textures?.pollutedCloudMap ?? undefined,
       })
       this._group.add(this._clouds.mesh)
     }
@@ -263,13 +264,14 @@ export class Earth {
     if (this._isDisposed) return
     
     if (this._useDayNightShader && this._shaderMaterial) {
-      // Apply to shader material
+      // Apply to shader material with pollution textures
       this._shaderMaterial.setTextures({
         dayMap: textures.dayMap ?? undefined,
         nightMap: textures.nightMap ?? undefined,
         normalMap: textures.normalMap ?? undefined,
         specularMap: textures.specularMap ?? undefined,
         cloudsMap: textures.cloudsMap ?? undefined,
+        pollutedDayMap: textures.pollutedDayMap ?? undefined,
       })
     } else if (this._material) {
       // Apply to standard material
@@ -281,9 +283,12 @@ export class Earth {
       }
     }
     
-    // Apply cloud texture
-    if (this._clouds && textures.cloudsMap) {
-      this._clouds.setTexture(textures.cloudsMap)
+    // Apply cloud textures (clean + polluted)
+    if (this._clouds) {
+      this._clouds.setTextures({
+        cleanCloudMap: textures.cloudsMap ?? undefined,
+        pollutedCloudMap: textures.pollutedCloudMap ?? undefined,
+      })
     }
   }
 

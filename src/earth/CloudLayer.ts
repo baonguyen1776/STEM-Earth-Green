@@ -2,6 +2,7 @@
  * Cloud Layer
  * 
  * Cloud/Smog sphere với DRAMATIC pollution transformation
+ * Using advanced shader-based texture blending
  * 
  * @module earth/CloudLayer
  * 
@@ -13,15 +14,152 @@
 
 import * as THREE from 'three'
 import { EARTH_GEOMETRY, EARTH_CLOUDS } from '../config/earthConfig'
-import { COLORS } from '../config/colors'
 import { clamp, lerp } from '../utils/math'
+
+/**
+ * Cloud Shader Material Options
+ */
+interface CloudShaderMaterialOptions {
+  cleanCloudMap?: THREE.Texture
+  pollutedCloudMap?: THREE.Texture
+  opacity?: number
+  pollutionLevel?: number
+  lightDirection?: THREE.Vector3
+  side?: THREE.Side
+}
+
+/**
+ * Cloud Shader Material with Pollution Blending
+ * IMPROVED: Better visibility and cinematic lighting
+ */
+class CloudShaderMaterial {
+  private _material: THREE.ShaderMaterial
+  private _pollutionLevel: number = 0
+
+  constructor(options: CloudShaderMaterialOptions = {}) {
+    this._pollutionLevel = clamp(options.pollutionLevel ?? 0, 0, 100)
+    
+    this._material = new THREE.ShaderMaterial({
+      uniforms: {
+        cleanCloudMap: { value: options.cleanCloudMap ?? null },
+        pollutedCloudMap: { value: options.pollutedCloudMap ?? null },
+        opacity: { value: options.opacity ?? 0.6 },  // Higher base opacity
+        pollutionLevel: { value: this._pollutionLevel / 100 },
+        lightDirection: { value: options.lightDirection ?? new THREE.Vector3(8, 5, 6).normalize() },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vWorldNormal;
+        
+        void main() {
+          vUv = uv;
+          vNormal = normalize(normalMatrix * normal);
+          vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D cleanCloudMap;
+        uniform sampler2D pollutedCloudMap;
+        uniform float opacity;
+        uniform float pollutionLevel;
+        uniform vec3 lightDirection;
+        
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vWorldNormal;
+        
+        void main() {
+          // Sample cloud textures
+          vec4 cleanClouds = texture2D(cleanCloudMap, vUv);
+          vec4 pollutedClouds = texture2D(pollutedCloudMap, vUv);
+          
+          // Blend clean and polluted based on pollution level
+          vec4 blendedClouds = mix(cleanClouds, pollutedClouds, pollutionLevel);
+          
+          // === CAMERA-FACING LIGHTING ===
+          // Use view-based lighting (from camera direction)
+          vec3 viewDir = normalize(-vNormal);
+          float lightIntensity = dot(vWorldNormal, lightDirection);
+          float dayFactor = smoothstep(-0.1, 0.5, lightIntensity);
+          
+          // Clouds are brighter overall
+          vec3 cloudColor = blendedClouds.rgb;
+          
+          // Clean clouds: bright white
+          // Polluted clouds: slightly dimmer
+          vec3 cleanTint = vec3(1.0, 1.0, 1.0);
+          vec3 pollutedTint = vec3(0.7, 0.65, 0.6);
+          cloudColor *= mix(cleanTint, pollutedTint, pollutionLevel);
+          
+          // Apply lighting - high base brightness
+          cloudColor *= (0.6 + dayFactor * 0.6);
+          
+          // === OPACITY - CLOUDS FADE WITH POLLUTION ===
+          // Base cloud alpha from texture
+          float cloudAlpha = blendedClouds.a;
+          
+          // Boost visibility for clean clouds
+          cloudAlpha = pow(cloudAlpha, 0.6);
+          
+          // === KEY CHANGE: Clouds DISAPPEAR with pollution ===
+          // At 0% pollution: full clouds
+          // At 100% pollution: no clouds (all burned away/acid rain)
+          float pollutionFade = 1.0 - pollutionLevel * 0.9;
+          float finalOpacity = opacity * cloudAlpha * pollutionFade;
+          
+          // Ensure some visibility at low pollution
+          finalOpacity = max(finalOpacity, 0.0);
+          
+          gl_FragColor = vec4(cloudColor, clamp(finalOpacity, 0.0, 0.8));
+        }
+      `,
+      side: options.side ?? THREE.DoubleSide,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+    })
+  }
+
+  get material() { return this._material }
+
+  setPollutionLevel(level: number): void {
+    this._pollutionLevel = clamp(level, 0, 100)
+    this._material.uniforms.pollutionLevel.value = this._pollutionLevel / 100
+  }
+
+  setOpacity(opacity: number): void {
+    this._material.uniforms.opacity.value = opacity
+  }
+
+  setTextures(textures: { cleanCloudMap?: THREE.Texture; pollutedCloudMap?: THREE.Texture }): void {
+    if (textures.cleanCloudMap) {
+      this._material.uniforms.cleanCloudMap.value = textures.cleanCloudMap
+    }
+    if (textures.pollutedCloudMap) {
+      this._material.uniforms.pollutedCloudMap.value = textures.pollutedCloudMap
+    }
+  }
+
+  setLightDirection(direction: THREE.Vector3): void {
+    this._material.uniforms.lightDirection.value = direction.normalize()
+  }
+
+  dispose(): void {
+    this._material.dispose()
+  }
+}
 
 /**
  * Cloud Layer Options
  */
 export interface CloudLayerOptions {
-  /** Cloud texture */
-  cloudTexture?: THREE.Texture
+  /** Clean cloud texture */
+  cleanCloudTexture?: THREE.Texture
+  
+  /** Polluted cloud texture */
+  pollutedCloudTexture?: THREE.Texture
   
   /** Initial opacity (default: 0.4) - lower for clean state */
   opacity?: number
@@ -31,6 +169,9 @@ export interface CloudLayerOptions {
   
   /** Cloud layer offset from Earth (default: 0.02) */
   heightOffset?: number
+  
+  /** Light direction for shading */
+  lightDirection?: THREE.Vector3
 }
 
 /**
@@ -54,17 +195,15 @@ export interface CloudLayerOptions {
 export class CloudLayer {
   // PRIVATE PROPERTIES
   private _mesh: THREE.Mesh
-  private _material: THREE.MeshStandardMaterial
+  private _material: CloudShaderMaterial
   private _pollutionLevel: number = 0
   private _baseOpacity: number
   private _rotationSpeed: number
-  private _cleanColor: THREE.Color
-  private _smogColor: THREE.Color
   private _isDisposed: boolean = false
 
   // CONSTRUCTOR
   /**
-   * Create new CloudLayer
+   * Create new CloudLayer with shader-based pollution blending
    * 
    * @param options - Cloud layer options
    */
@@ -79,33 +218,21 @@ export class CloudLayer {
     this._rotationSpeed = EARTH_CLOUDS.rotationSpeed
     this._pollutionLevel = options.pollutionLevel ?? 0
     
-    // Color setup - Clean white → Dark smog
-    this._cleanColor = new THREE.Color(COLORS.atmosphere.clouds)  // #f0f0f0
-    this._smogColor = new THREE.Color(COLORS.atmosphere.smog || 0x2d2418)  // Dark brown smog
-    
     // Create geometry
     const geometry = new THREE.SphereGeometry(cloudRadius, segments, segments)
     
-    // Create material với more sophisticated settings
-    this._material = new THREE.MeshStandardMaterial({
-      color: this._cleanColor,
-      transparent: true,
+    // Create shader material
+    this._material = new CloudShaderMaterial({
+      cleanCloudMap: options.cleanCloudTexture,
+      pollutedCloudMap: options.pollutedCloudTexture,
       opacity: this._baseOpacity,
+      pollutionLevel: this._pollutionLevel,
+      lightDirection: options.lightDirection,
       side: THREE.DoubleSide,
-      depthWrite: false,
-      blending: THREE.NormalBlending,
-      roughness: 1.0,
-      metalness: 0.0,
     })
     
-    // Apply texture
-    if (options.cloudTexture) {
-      this._material.map = options.cloudTexture
-      this._material.alphaMap = options.cloudTexture
-    }
-    
     // Create mesh
-    this._mesh = new THREE.Mesh(geometry, this._material)
+    this._mesh = new THREE.Mesh(geometry, this._material.material)
     this._mesh.name = 'clouds'
     
     // Apply initial pollution
@@ -123,7 +250,7 @@ export class CloudLayer {
   /**
    * Get cloud material
    */
-  get material(): THREE.MeshStandardMaterial {
+  get material(): CloudShaderMaterial {
     return this._material
   }
 
@@ -131,7 +258,7 @@ export class CloudLayer {
    * Get current opacity
    */
   get opacity(): number {
-    return this._material.opacity
+    return this._material.material.uniforms.opacity.value
   }
 
   /**
@@ -163,7 +290,7 @@ export class CloudLayer {
   }
 
   /**
-   * Set pollution level - DRAMATIC TRANSFORMATION
+   * Set pollution level - DRAMATIC TRANSFORMATION via Shader Blending
    * 
    * 0%: Light wispy clouds, low opacity
    * 50%: Gray thickening clouds
@@ -176,32 +303,28 @@ export class CloudLayer {
     if (this._isDisposed) return
     
     this._pollutionLevel = clamp(level, 0, 100)
-    const weight = this._pollutionLevel / 100
     
-    // === OPACITY - CRITICAL for visual impact ===
-    // Clean: 0.4 (light clouds visible)
-    // Polluted: 0.85 (dense smog covers surface)
-    const opacity = lerp(this._baseOpacity, 0.85, Math.pow(weight, 0.8))
-    this._material.opacity = opacity
-    
-    // === COLOR SHIFT ===
-    // White fluffy → Dark brown/gray smog
-    this._material.color.lerpColors(this._cleanColor, this._smogColor, weight)
-    
-    // === EMISSIVE for "glowing" pollution effect at high levels ===
-    if (weight > 0.6) {
-      const emissiveWeight = (weight - 0.6) / 0.4  // 0-1 trong range 60-100%
-      this._material.emissive = new THREE.Color(0x1a0f00)  // Dim orange-brown
-      this._material.emissiveIntensity = emissiveWeight * 0.15
-    } else {
-      this._material.emissiveIntensity = 0
-    }
-    
-    // === SCALE - Smog expands slightly ===
-    const scaleBoost = lerp(1.0, 1.03, weight)
-    this._mesh.scale.setScalar(scaleBoost)
-    
-    this._material.needsUpdate = true
+    // Pass pollution level to shader for texture blending
+    this._material.setPollutionLevel(this._pollutionLevel)
+  }
+
+  /**
+   * Set textures for cloud blending
+   */
+  setTextures(textures: {
+    cleanCloudMap?: THREE.Texture
+    pollutedCloudMap?: THREE.Texture
+  }): void {
+    if (this._isDisposed) return
+    this._material.setTextures(textures)
+  }
+
+  /**
+   * Set light direction for shader
+   */
+  setLightDirection(direction: THREE.Vector3): void {
+    if (this._isDisposed) return
+    this._material.setLightDirection(direction)
   }
 
   /**
@@ -211,21 +334,7 @@ export class CloudLayer {
    */
   setOpacity(opacity: number): void {
     if (this._isDisposed) return
-    
-    this._material.opacity = clamp(opacity, 0, 1)
-  }
-
-  /**
-   * Set cloud texture
-   * 
-   * @param texture - Cloud texture
-   */
-  setTexture(texture: THREE.Texture): void {
-    if (this._isDisposed) return
-    
-    this._material.map = texture
-    this._material.alphaMap = texture
-    this._material.needsUpdate = true
+    this._material.setOpacity(opacity)
   }
 
   /**

@@ -9,6 +9,7 @@
  */
 
 import './style.css'
+import * as THREE from 'three'
 
 // Core
 import { Renderer, SceneManager, CameraManager, AnimationLoop } from './core'
@@ -21,6 +22,9 @@ import { Starfield, SmokeSystem, TrashSystem } from './effects'
 
 // UI
 import { PollutionSlider, InfoPanel, IntroScreen, IntroController } from './ui'
+
+// Config
+import { CAMERA_POSITION } from './config/camera'
 
 // Domain
 import { EarthState } from './domain'
@@ -121,8 +125,15 @@ class App {
     // Create renderer
     this.renderer = new Renderer({ container: '#app' })
     
-    // Create scene
-    this.sceneManager = new SceneManager()
+    // Create scene with dark background
+    this.sceneManager = new SceneManager({
+      backgroundColor: 0x000000,  // Very dark black (not pure black but very close)
+    })
+    
+    // Add background glow light to simulate sun glow affecting background
+    const backgroundLight = new THREE.PointLight(0xffaa44, 0.4, 150)
+    backgroundLight.position.set(40, 25, 60)
+    this.sceneManager.scene.add(backgroundLight)
     
     // Create camera
     this.cameraManager = new CameraManager({
@@ -209,8 +220,8 @@ class App {
     this.introController = new IntroController({
       cameraManager: this.cameraManager,
       duration: 3,
-      startDistance: 20,
-      endDistance: 15,
+      startDistance: 50,  
+      endDistance: CAMERA_POSITION.z,
       onComplete: () => this.onIntroComplete(),
     })
     
@@ -276,8 +287,9 @@ class App {
    * Force camera to center on Earth at origin
    */
   private centerCamera(): void {
-    // Set camera position directly looking at origin
-    this.cameraManager.setPosition(0, 0, 20)
+    // Set camera position directly looking at origin (respects CAMERA_POSITION config)
+    const cameraPos = CAMERA_POSITION
+    this.cameraManager.setPosition(cameraPos.x, cameraPos.y, cameraPos.z)
     this.cameraManager.setTarget(0, 0, 0)
     
     // Also set Earth position to origin explicitly

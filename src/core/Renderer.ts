@@ -99,6 +99,9 @@ export class Renderer {
     // Configure renderer
     this.configure(options)
     
+    // Setup tone mapping for cinematic rendering
+    this.setToneMapping(THREE.ACESFilmicToneMapping, 1.2)
+    
     // Setup resize handling
     this.setupResizeHandling()
     
