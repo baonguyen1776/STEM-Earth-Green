@@ -392,8 +392,18 @@ class App {
 }
 
 // Initialize application
+console.log('🌍 Starting STEM Earth Green application...')
 const app = new App()
-app.init()
+app.init().catch(error => {
+  console.error('💥 Failed to initialize app:', error)
+  document.body.innerHTML = `
+    <div style="color: white; padding: 20px; background: red;">
+      <h1>Error Loading Application</h1>
+      <p>${error.message}</p>
+      <p>Check console for details</p>
+    </div>
+  `
+})
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
