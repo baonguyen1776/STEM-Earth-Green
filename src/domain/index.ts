@@ -31,5 +31,5 @@ export {
 export type { PollutionLevelInfo, PollutionLevelEnum } from './models/pollutionLevel'
 
 // Services
-export { PollutionService } from './services/pollutionService.ts'
-export type { PollutionEffectsValues } from './services/pollutionService.ts'
+export { PollutionService } from './services/pollutionService'
+export type { PollutionEffectsValues } from './services/pollutionService'

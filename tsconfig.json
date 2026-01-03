@@ -20,6 +20,8 @@
     "moduleDetection": "force",
     "resolveJsonModule": true,
     "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
