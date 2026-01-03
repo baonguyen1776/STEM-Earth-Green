@@ -31,7 +31,7 @@ export interface TextureLoadProgress {
 export type TextureLoadCallback = (progress: TextureLoadProgress) => void
 
 /**
- * Earth Textures Interface
+ * Earth Textures Interface - Extended with pollution support
  */
 export interface EarthTextureSet {
   dayMap: THREE.Texture | null
@@ -39,18 +39,23 @@ export interface EarthTextureSet {
   cloudsMap: THREE.Texture | null
   normalMap: THREE.Texture | null
   specularMap: THREE.Texture | null
+  // Pollution textures
+  pollutedDayMap: THREE.Texture | null
+  pollutedCloudMap: THREE.Texture | null
 }
 
 /**
- * Texture paths từ config
+ * Texture paths từ config - Extended with pollution
  */
 const TEXTURE_PATHS = {
   dayMap: EARTH_ASSETS.dayMap,
   nightMap: EARTH_ASSETS.nightMap,
   cloudsMap: EARTH_ASSETS.cloudMap,
-  // Note: TIF files cần convert sang JPG/PNG
-  // normalMap: EARTH_ASSETS.normalMap,
-  // specularMap: EARTH_ASSETS.specularMap,
+  normalMap: EARTH_ASSETS.normalMap,
+  specularMap: EARTH_ASSETS.specularMap,
+  // Pollution textures
+  pollutedDayMap: EARTH_ASSETS.pollutedDayMap,
+  pollutedCloudMap: EARTH_ASSETS.pollutedCloudMap,
 }
 
 /**
@@ -83,6 +88,9 @@ export class EarthTextures {
     cloudsMap: null,
     normalMap: null,
     specularMap: null,
+    // Pollution textures
+    pollutedDayMap: null,
+    pollutedCloudMap: null,
   }
   private _isLoaded: boolean = false
   private _isLoading: boolean = false

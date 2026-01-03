@@ -1,14 +1,19 @@
 /**
- * Earth Module
+ * Earth Module - Advanced Pollution System
  * 
- * Barrel export cho Earth visualization components
+ * Barrel export cho Earth visualization components với shader-based pollution
  * 
  * @module earth
  * 
  * Usage:
  * ```typescript
- * import { Earth, EarthTextures, EarthMaterial, CloudLayer, Atmosphere } from './earth'
+ * import { 
+ *   Earth, EarthTextures, EarthShaderMaterial, 
+ *   CloudLayer, CloudShaderMaterial,
+ *   AtmosphereShaderMaterial, PollutionController 
+ * } from './earth'
  * 
+ * const pollutionController = new PollutionController()
  * const earth = new Earth({ pollutionLevel: 0 })
  * await earth.loadTextures()
  * scene.add(earth.group)
@@ -19,13 +24,23 @@
 export { Earth } from './Earth'
 export type { EarthOptions } from './Earth'
 
-// Material
-export { EarthMaterial } from './EarthMaterial'
-export type { EarthMaterialOptions } from './EarthMaterial'
-
-// Shader Material (day/night effect)
+// Shader Materials (Advanced)
 export { EarthShaderMaterial } from './EarthShaderMaterial'
 export type { EarthShaderMaterialOptions } from './EarthShaderMaterial'
+
+export { CloudShaderMaterial } from './CloudShaderMaterial'
+export type { CloudShaderMaterialOptions } from './CloudShaderMaterial'
+
+export { AtmosphereShaderMaterial } from './AtmosphereShaderMaterial'
+export type { AtmosphereShaderMaterialOptions } from './AtmosphereShaderMaterial'
+
+// Pollution System
+export { PollutionController } from './PollutionController'
+export type { PollutionControllerOptions } from './PollutionController'
+
+// Material (Legacy)
+export { EarthMaterial } from './EarthMaterial'
+export type { EarthMaterialOptions } from './EarthMaterial'
 
 // Textures
 export {

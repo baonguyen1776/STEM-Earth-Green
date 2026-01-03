@@ -13,10 +13,9 @@
  */
 
 import * as THREE from 'three'
-import { COLORS } from '../config/colors'
 
 /**
- * Light Configuration
+ * Light Configuration - NASA Satellite Style Cinematic Lighting
  */
 export interface LightConfig {
   /** Ambient light intensity (0-1) */
@@ -25,23 +24,32 @@ export interface LightConfig {
   /** Ambient light color */
   ambientColor?: number | string
   
-  /** Directional light intensity (0-1) */
-  directionalIntensity?: number
+  /** Key light (sun) intensity */
+  keyLightIntensity?: number
   
-  /** Directional light color */
-  directionalColor?: number | string
+  /** Key light color */
+  keyLightColor?: number | string
   
-  /** Directional light position */
-  directionalPosition?: { x: number; y: number; z: number }
+  /** Key light position */
+  keyLightPosition?: { x: number; y: number; z: number }
   
-  /** Back light intensity (0-1) */
-  backLightIntensity?: number
+  /** Rim light intensity - creates sharp edge silhouette */
+  rimLightIntensity?: number
   
-  /** Back light color */
-  backLightColor?: number | string
+  /** Rim light color */
+  rimLightColor?: number | string
   
-  /** Back light position */
-  backLightPosition?: { x: number; y: number; z: number }
+  /** Rim light position */
+  rimLightPosition?: { x: number; y: number; z: number }
+  
+  /** Fill light intensity - subtle fill for shadows */
+  fillLightIntensity?: number
+  
+  /** Fill light color */
+  fillLightColor?: number | string
+  
+  /** Fill light position */
+  fillLightPosition?: { x: number; y: number; z: number }
 }
 
 /**
@@ -63,26 +71,42 @@ export interface SceneManagerOptions {
 }
 
 /**
- * Default light configuration - THREE-POINT LIGHTING SYSTEM
+ * Default light configuration - NASA SATELLITE STYLE CINEMATIC LIGHTING
  * 
- * Key Light (Directional): Main sun light creating terminator line
- * Fill Light (Back): Subtle fill for depth
- * Ambient: Base illumination
+ * 🌞 Key Light (Sun): Warm white directional light creating dramatic daylight
+ *    - Positioned at camera angle for optimal specular on oceans
+ *    - Warm tone (#fff5e6) mimics actual sunlight
+ * 
+ * 💫 Rim Light: Cyan backlight creating atmospheric edge glow
+ *    - Creates sharp silhouette separating Earth from space
+ *    - Position behind Earth (negative Z)
+ * 
+ * 🌌 Ambient: Very low dark blue for space atmosphere
+ *    - Keeps shadow areas from being pure black
+ *    - Adds subtle atmospheric color
+ * 
+ * 💡 Fill Light: Subtle fill to lift shadow detail
+ *    - Prevents shadows from being too harsh
  */
 const DEFAULT_LIGHTS: Required<LightConfig> = {
-  // AMBIENT - Base illumination (tăng để Earth sáng hơn)
-  ambientIntensity: 0.6,  // Tăng từ 0.4 để sáng hơn
-  ambientColor: COLORS.lights.ambient,
+  // 🌌 AMBIENT - Dark space atmosphere
+  ambientIntensity: 0.6,  // Increased from 0.4 for overall brightness
+  ambientColor: 0x0a0a1a,  // Deep space blue
   
-  // KEY LIGHT (Sun) - Creates terminator line on Earth
-  directionalIntensity: 3.5,  // Tăng từ 2.5 để ánh sáng mặt trời mạnh hơn
-  directionalColor: 0xffffff,  // Ánh sáng trắng tinh khiết của mặt trời
-  directionalPosition: { x: 5, y: 3, z: 10 },  // Điều chỉnh vị trí để chiếu thẳng hơn
+  // 🌞 KEY LIGHT (Sun) - Cinematic daylight with warm tone
+  keyLightIntensity: 2.5,  // Increased from 1.8 - BRIGHTER SUN
+  keyLightColor: 0xfff5e6,  // Warm white sunlight (slightly yellow)
+  keyLightPosition: { x: 6, y: 4, z: 8 },  // Moved closer (from z=10 to z=8)
   
-  // FILL LIGHT (Back) - Rim lighting for depth
-  backLightIntensity: 0.8,  // Tăng để tạo rim light rõ hơn
-  backLightColor: 0x6688cc,  // Cool blue for contrast
-  backLightPosition: { x: -8, y: -3, z: -8 },
+  // 💫 RIM LIGHT - Cyan atmospheric edge glow
+  rimLightIntensity: 2.8,  // Increased from 2.2 - STRONGER EDGE
+  rimLightColor: 0x00f2ff,  // Bright cyan for atmosphere edge
+  rimLightPosition: { x: -3, y: 1, z: -8 },  // Brought closer (from z=-10 to z=-8)
+  
+  // 💡 FILL LIGHT (Back Light) - Sharp rim edge definition
+  fillLightIntensity: 0.8,  // Increased from 0.5 for better shadow lift
+  fillLightColor: 0x4466aa,  // Cool blue fill
+  fillLightPosition: { x: -8, y: -2, z: 5 },  // Off to the side
 }
 
 /**
@@ -115,10 +139,15 @@ export class SceneManager {
   // PRIVATE PROPERTIES
   private _scene: THREE.Scene
   private _ambientLight: THREE.AmbientLight
-  private _directionalLight: THREE.DirectionalLight
-  private _backLight: THREE.DirectionalLight
+  private _keyLight: THREE.DirectionalLight
+  private _rimLight: THREE.PointLight
+  private _fillLight: THREE.DirectionalLight
   private _objects: Map<string, THREE.Object3D> = new Map()
   private _isDisposed: boolean = false
+  
+  // Store original rim light color for pollution effects
+  private _originalRimLightColor: THREE.Color
+  private _originalKeyLightIntensity: number
 
   // CONSTRUCTOR
   /**
@@ -144,39 +173,57 @@ export class SceneManager {
       )
     }
     
-    // Setup lights
+    // Setup lights - NASA Satellite Style
     const lightConfig = { ...DEFAULT_LIGHTS, ...options.lights }
     
-    // Ambient light
+    // 🌌 Ambient light - Dark blue space atmosphere
     this._ambientLight = new THREE.AmbientLight(
       lightConfig.ambientColor,
       lightConfig.ambientIntensity
     )
     this._scene.add(this._ambientLight)
     
-    // Directional light (main light source - sun)
-    this._directionalLight = new THREE.DirectionalLight(
-      lightConfig.directionalColor,
-      lightConfig.directionalIntensity
+    // 🌞 Key light (Sun) - Main light source
+    this._keyLight = new THREE.DirectionalLight(
+      lightConfig.keyLightColor,
+      lightConfig.keyLightIntensity
     )
-    this._directionalLight.position.set(
-      lightConfig.directionalPosition.x,
-      lightConfig.directionalPosition.y,
-      lightConfig.directionalPosition.z
+    this._keyLight.position.set(
+      lightConfig.keyLightPosition.x,
+      lightConfig.keyLightPosition.y,
+      lightConfig.keyLightPosition.z
     )
-    this._scene.add(this._directionalLight)
+    this._scene.add(this._keyLight)
     
-    // Back light (fill light for depth)
-    this._backLight = new THREE.DirectionalLight(
-      lightConfig.backLightColor,
-      lightConfig.backLightIntensity
+    // 💫 Rim light - Cyan atmospheric edge glow (PointLight for softer falloff)
+    this._rimLight = new THREE.PointLight(
+      lightConfig.rimLightColor,
+      lightConfig.rimLightIntensity,
+      50,  // distance
+      1.5  // decay
     )
-    this._backLight.position.set(
-      lightConfig.backLightPosition.x,
-      lightConfig.backLightPosition.y,
-      lightConfig.backLightPosition.z
+    this._rimLight.position.set(
+      lightConfig.rimLightPosition.x,
+      lightConfig.rimLightPosition.y,
+      lightConfig.rimLightPosition.z
     )
-    this._scene.add(this._backLight)
+    this._scene.add(this._rimLight)
+    
+    // 💡 Fill light - Subtle shadow fill
+    this._fillLight = new THREE.DirectionalLight(
+      lightConfig.fillLightColor,
+      lightConfig.fillLightIntensity
+    )
+    this._fillLight.position.set(
+      lightConfig.fillLightPosition.x,
+      lightConfig.fillLightPosition.y,
+      lightConfig.fillLightPosition.z
+    )
+    this._scene.add(this._fillLight)
+    
+    // Store original values for pollution effects
+    this._originalRimLightColor = new THREE.Color(lightConfig.rimLightColor)
+    this._originalKeyLightIntensity = lightConfig.keyLightIntensity
   }
 
   // PUBLIC GETTERS
@@ -195,17 +242,38 @@ export class SceneManager {
   }
 
   /**
-   * Get directional light
+   * Get key light (main sun light)
    */
-  get directionalLight(): THREE.DirectionalLight {
-    return this._directionalLight
+  get keyLight(): THREE.DirectionalLight {
+    return this._keyLight
   }
 
   /**
-   * Get back light
+   * Get directional light (alias for keyLight - backwards compatibility)
+   */
+  get directionalLight(): THREE.DirectionalLight {
+    return this._keyLight
+  }
+
+  /**
+   * Get rim light (cyan atmospheric edge glow)
+   */
+  get rimLight(): THREE.PointLight {
+    return this._rimLight
+  }
+
+  /**
+   * Get fill light
+   */
+  get fillLight(): THREE.DirectionalLight {
+    return this._fillLight
+  }
+
+  /**
+   * Get back light (alias for fillLight - backwards compatibility)
    */
   get backLight(): THREE.DirectionalLight {
-    return this._backLight
+    return this._fillLight
   }
 
   /**
@@ -342,49 +410,148 @@ export class SceneManager {
   }
 
   /**
-   * Set directional light intensity
+   * Set key light (sun) intensity
    * 
-   * @param intensity - Intensity (0-1)
+   * @param intensity - Intensity (0-3)
    */
-  setDirectionalIntensity(intensity: number): void {
-    this._directionalLight.intensity = intensity
+  setKeyLightIntensity(intensity: number): void {
+    this._keyLight.intensity = intensity
   }
 
   /**
-   * Set back light intensity
+   * Set directional light intensity (alias for setKeyLightIntensity)
+   * 
+   * @param intensity - Intensity (0-3)
+   */
+  setDirectionalIntensity(intensity: number): void {
+    this._keyLight.intensity = intensity
+  }
+
+  /**
+   * Set rim light intensity
+   * 
+   * @param intensity - Intensity (0-2)
+   */
+  setRimLightIntensity(intensity: number): void {
+    this._rimLight.intensity = intensity
+  }
+
+  /**
+   * Set fill light intensity
+   * 
+   * @param intensity - Intensity (0-1)
+   */
+  setFillLightIntensity(intensity: number): void {
+    this._fillLight.intensity = intensity
+  }
+
+  /**
+   * Set back light intensity (alias for setFillLightIntensity)
    * 
    * @param intensity - Intensity (0-1)
    */
   setBackLightIntensity(intensity: number): void {
-    this._backLight.intensity = intensity
+    this._fillLight.intensity = intensity
   }
 
   /**
    * Set all light intensities
    * 
    * @param ambient - Ambient intensity
-   * @param directional - Directional intensity
-   * @param backLight - Back light intensity
+   * @param keyLight - Key light (sun) intensity
+   * @param rimLight - Rim light intensity
+   * @param fillLight - Fill light intensity
    */
   setLightIntensities(
     ambient: number,
-    directional: number,
-    backLight: number
+    keyLight: number,
+    rimLight: number,
+    fillLight?: number
   ): void {
     this._ambientLight.intensity = ambient
-    this._directionalLight.intensity = directional
-    this._backLight.intensity = backLight
+    this._keyLight.intensity = keyLight
+    this._rimLight.intensity = rimLight
+    if (fillLight !== undefined) {
+      this._fillLight.intensity = fillLight
+    }
   }
 
   /**
-   * Set directional light position
+   * Set key light position
+   * 
+   * @param x - X position
+   * @param y - Y position
+   * @param z - Z position
+   */
+  setKeyLightPosition(x: number, y: number, z: number): void {
+    this._keyLight.position.set(x, y, z)
+  }
+
+  /**
+   * Set directional light position (alias for setKeyLightPosition)
    * 
    * @param x - X position
    * @param y - Y position
    * @param z - Z position
    */
   setDirectionalLightPosition(x: number, y: number, z: number): void {
-    this._directionalLight.position.set(x, y, z)
+    this._keyLight.position.set(x, y, z)
+  }
+
+  /**
+   * 🔥 UPDATE LIGHTING BASED ON POLLUTION LEVEL
+   * 
+   * As pollution increases:
+   * - Rim light fades from cyan to gray (atmosphere becomes polluted)
+   * - Sun intensity decreases (smog blocking light)
+   * - Ambient becomes slightly more brown/gray
+   * 
+   * @param pollutionLevel - Pollution level (0-1)
+   */
+  updateLightingForPollution(pollutionLevel: number): void {
+    const t = Math.max(0, Math.min(1, pollutionLevel))
+    
+    // Rim light: Cyan (#00f2ff) -> Gray (#666666)
+    const rimGray = new THREE.Color(0x666666)
+    const currentRimColor = this._originalRimLightColor.clone()
+    currentRimColor.lerp(rimGray, t * 0.7)  // 70% transition to gray at max pollution
+    this._rimLight.color.copy(currentRimColor)
+    
+    // Rim light intensity decreases with pollution (atmosphere becomes hazy)
+    this._rimLight.intensity = 1.2 * (1 - t * 0.5)  // 50% reduction at max
+    
+    // Key light (sun) becomes slightly dimmer and more orange/brown
+    const sunDimFactor = 1 - t * 0.3  // 30% dimmer at max pollution
+    this._keyLight.intensity = this._originalKeyLightIntensity * sunDimFactor
+    
+    // Sun color shifts warmer/orange with pollution (like sunset through smog)
+    const cleanSunColor = new THREE.Color(0xfff5e6)  // Warm white
+    const pollutedSunColor = new THREE.Color(0xffaa66)  // Orange/brown
+    const sunColor = cleanSunColor.clone()
+    sunColor.lerp(pollutedSunColor, t * 0.4)  // Subtle color shift
+    this._keyLight.color.copy(sunColor)
+    
+    // Ambient becomes slightly more brown/hazy
+    const cleanAmbient = new THREE.Color(0x0a0a1a)  // Deep blue
+    const pollutedAmbient = new THREE.Color(0x1a1510)  // Brown/gray
+    const ambientColor = cleanAmbient.clone()
+    ambientColor.lerp(pollutedAmbient, t * 0.5)
+    this._ambientLight.color.copy(ambientColor)
+    
+    // Slightly increase ambient to simulate light scattering in smog
+    this._ambientLight.intensity = 0.15 + t * 0.1
+  }
+
+  /**
+   * Reset lighting to clean state
+   */
+  resetLighting(): void {
+    this._rimLight.color.copy(this._originalRimLightColor)
+    this._rimLight.intensity = 1.2
+    this._keyLight.intensity = this._originalKeyLightIntensity
+    this._keyLight.color.set(0xfff5e6)
+    this._ambientLight.color.set(0x0a0a1a)
+    this._ambientLight.intensity = 0.15
   }
 
   /**
@@ -461,8 +628,9 @@ export class SceneManager {
     
     // Dispose lights
     this._ambientLight.dispose()
-    this._directionalLight.dispose()
-    this._backLight.dispose()
+    this._keyLight.dispose()
+    this._rimLight.dispose()
+    this._fillLight.dispose()
     
     // Clear scene
     this._scene.clear()

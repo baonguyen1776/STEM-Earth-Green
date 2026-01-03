@@ -34,7 +34,7 @@ export const EARTH_COLORS = {
  * Màu sắc đại dương
  */
 export const OCEAN_COLORS = {
-    clean: '#0077be',      // Xanh đại dương rực rỡ
+    clean: '#00a8e8',      // Xanh nhạt sáng hơn (light ocean blue)
     polluted: '#1a1a1a',   // Đen đục ngầu
     foam: '#ffffff',
 } as const

@@ -83,8 +83,10 @@ export const CAMERA_POSITION = {
      * - z = radius * 3: Nhìn gần, thấy chi tiết
      * - z = radius * 5: Sweet spot, cân bằng
      * - z = radius * 10: Nhìn xa, thấy tổng thể
+     * 
+     * z=12: Earth fills screen nicely, comfortable cinematic view on load
      */
-    z: 15,
+    z: 10,
 } as const
 
 /**
@@ -110,8 +112,8 @@ export const ORBIT_CONTROLS = {
     dampingFactor: 0.05,
     enableZoom: true,
     zoomSpeed: 1.0,
-    minDistance: 8,
-    maxDistance: 30,
+    minDistance: 8,  // User can zoom in to this distance
+    maxDistance: 25,  // User can zoom out to this distance - keeps Earth prominent
     enableRotate: true,
     rotateSpeed: 1.0,
     enablePan: false,
