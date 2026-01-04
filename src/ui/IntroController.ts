@@ -68,7 +68,6 @@ export class IntroController {
   private _cameraManager: CameraManager
   private _timeline: gsap.core.Timeline | null = null
   private _duration: number
-  private _startDistance: number
   private _endDistance: number
   private _onComplete: (() => void) | null
   private _onUpdate: ((progress: number) => void) | null
@@ -85,13 +84,9 @@ export class IntroController {
   constructor(options: IntroControllerOptions) {
     this._cameraManager = options.cameraManager
     this._duration = options.duration ?? 3
-    this._startDistance = options.startDistance ?? 20
     this._endDistance = options.endDistance ?? this._cameraManager.position.z
     this._onComplete = options.onComplete ?? null
     this._onUpdate = options.onUpdate ?? null
-    
-    // Don't auto-set position here - let main.ts control camera
-    // this.setStartPosition()
   }
 
   // PUBLIC GETTERS
@@ -125,16 +120,6 @@ export class IntroController {
   }
 
   // PUBLIC METHODS
-  /**
-   * Set camera to start position and ensure it looks at origin
-   */
-  setStartPosition(): void {
-    if (this._isDisposed) return
-    
-    this._cameraManager.setPosition(0, 0, this._startDistance)
-    this._cameraManager.setTarget(0, 0, 0)  // Ensure looking at Earth center
-  }
-
   /**
    * Play intro animation
    * 
@@ -259,8 +244,9 @@ export class IntroController {
     this._isPlaying = false
     this._isCompleted = false
     
-    // Reset camera
-    this.setStartPosition()
+    // Reset camera to start position
+    this._cameraManager.setPosition(0, -1, 4)
+    this._cameraManager.setTarget(0, 0, 0)
     this._cameraManager.disableControls()
   }
 
