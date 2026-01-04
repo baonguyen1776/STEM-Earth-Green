@@ -6,6 +6,9 @@ export default defineConfig({
   // Thay 'STEM-Earth-Green' bằng tên repository của bạn
   base: '/STEM-Earth-Green/',
   
+  // Public directory
+  publicDir: 'public',
+  
   build: {
     // Output directory
     outDir: 'dist',
