@@ -70,7 +70,6 @@ export class IntroController {
   private _duration: number
   private _startDistance: number
   private _endDistance: number
-  private _ease: string
   private _onComplete: (() => void) | null
   private _onUpdate: ((progress: number) => void) | null
   private _isPlaying: boolean = false
@@ -88,7 +87,6 @@ export class IntroController {
     this._duration = options.duration ?? 3
     this._startDistance = options.startDistance ?? 20
     this._endDistance = options.endDistance ?? this._cameraManager.position.z
-    this._ease = options.ease ?? 'power2.out'
     this._onComplete = options.onComplete ?? null
     this._onUpdate = options.onUpdate ?? null
     
@@ -150,9 +148,8 @@ export class IntroController {
     return new Promise((resolve) => {
       this._isPlaying = true
       
-      // Set start position and target before animation
-      this._cameraManager.setPosition(0, 0, this._startDistance)
-      this._cameraManager.setTarget(0, 0, 0)
+      // DON'T reset position here - use current camera position as start
+      // This allows main.ts to set custom start position (e.g., Earth at bottom)
       
       // Create timeline
       this._timeline = gsap.timeline({
@@ -182,13 +179,16 @@ export class IntroController {
       // Disable controls during animation
       this._cameraManager.disableControls()
       
-      // Animate camera position
-      const positionTarget = this._cameraManager.positionTarget
+      // Animate camera position smoothly to end position
+      const camera = this._cameraManager.camera
       
-      this._timeline.to(positionTarget, {
+      // Smooth animation: y goes back to 0, z goes to endDistance
+      this._timeline.to(camera.position, {
+        x: 0,
+        y: 0,
         z: this._endDistance,
         duration: this._duration,
-        ease: this._ease,
+        ease: 'power2.inOut',
       })
       
       // Optional: Add rotation effect

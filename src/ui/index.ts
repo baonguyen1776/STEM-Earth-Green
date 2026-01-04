@@ -27,6 +27,14 @@ export type { InfoPanelOptions } from './InfoPanel'
 export { IntroScreen } from './IntroScreen'
 export type { IntroScreenOptions } from './IntroScreen'
 
+// Premium Intro Screen (with 3D Earth animation)
+export { PremiumIntroScreen } from './PremiumIntroScreen'
+export type { PremiumIntroScreenOptions } from './PremiumIntroScreen'
+
+// Simple Overlay (text + button only, main Earth visible behind)
+export { SimpleOverlay } from './SimpleOverlay'
+export type { SimpleOverlayOptions } from './SimpleOverlay'
+
 // Intro Controller
 export { IntroController } from './IntroController'
 export type { IntroControllerOptions } from './IntroController'
