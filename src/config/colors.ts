@@ -34,7 +34,7 @@ export const EARTH_COLORS = {
  * Màu sắc đại dương
  */
 export const OCEAN_COLORS = {
-    clean: '#00a8e8',      // Xanh nhạt sáng hơn (light ocean blue)
+    clean: '#48c6f8ff',      // Xanh nhạt sáng hơn (light ocean blue)
     polluted: '#1a1a1a',   // Đen đục ngầu
     foam: '#ffffff',
 } as const
@@ -45,7 +45,7 @@ export const OCEAN_COLORS = {
  * Màu sắc bầu khí quyển - CRITICAL cho visual impact
  */
 export const ATMOSPHERE_COLORS = {
-    clean: '#1e90ff',      // Xanh lam rực rỡ (dodger blue)
+    clean: '#60b6ff',      // Xanh lam sáng hơn (brighter sky blue)
     polluted: '#4a4a4a',   // Xám nâu chì đục ngầu
     smog: '#2d2418',       // Màu khói bụi nặng
     clouds: '#f0f0f0',
