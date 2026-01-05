@@ -21,7 +21,7 @@ import { Earth, disposeSharedTextures } from './earth'
 import { Starfield, SmokeSystem, TrashSystem } from './effects'
 
 // UI
-import { PollutionSlider, InfoPanel, IntroScreen, IntroController } from './ui'
+import { PollutionSlider, InfoPanel, IntroController, SimpleOverlay } from './ui'
 
 // Config
 import { CAMERA_POSITION } from './config/camera'
@@ -52,7 +52,7 @@ class App {
   // UI
   private slider!: PollutionSlider
   private infoPanel!: InfoPanel
-  private introScreen!: IntroScreen
+  private introOverlay!: SimpleOverlay
   private introController!: IntroController
   
   // State
@@ -207,25 +207,28 @@ class App {
    * Initialize UI
    */
   private initUI(): void {
-    // Intro screen
-    this.introScreen = new IntroScreen({
-      title: 'Trái Đất Xanh',
+    // Simple overlay - just text/button, Main Earth visible behind
+    this.introOverlay = new SimpleOverlay({
+      title: 'TRÁI ĐẤT XANH',
       subtitle: 'Hai Tương Lai',
       buttonText: 'Khám Phá',
       onStart: () => this.startExperience(),
     })
-    this.introScreen.show() // Show intro content with animation
     
-    // Intro controller
+    // Intro controller - animates camera from close to far (Earth "flies out")
     this.introController = new IntroController({
       cameraManager: this.cameraManager,
-      duration: 3,
-      startDistance: 50,  
-      endDistance: CAMERA_POSITION.z,
+      duration: 2.5,
+      startDistance: 4,    // Start CLOSE to Earth (Earth at bottom of screen)
+      endDistance: CAMERA_POSITION.z,  // End at normal viewing distance
       onComplete: () => this.onIntroComplete(),
     })
     
-    // Slider (initially disabled)
+    // Set camera to intro position (close to Earth)
+    this.cameraManager.camera.position.set(0, -1, 4)
+    this.cameraManager.camera.lookAt(0, 0, 0)
+    
+    // Slider (hidden during intro)
     this.slider = new PollutionSlider({
       initialValue: 0,
       onChange: (value) => {
@@ -233,6 +236,7 @@ class App {
       },
     })
     this.slider.disable()
+    this.slider.hide()  // Hide during intro
     
     // Info panel (initially hidden)
     this.infoPanel = new InfoPanel({
@@ -307,6 +311,7 @@ class App {
    * Start experience after intro
    */
   private startExperience(): void {
+    // Start camera animation (Earth "flies out" from bottom to center)
     this.introController.play()
   }
   
@@ -314,7 +319,8 @@ class App {
    * Called when intro animation completes
    */
   private onIntroComplete(): void {
-    // Enable UI
+    // Show and enable UI
+    this.slider.show()
     this.slider.enable()
     this.infoPanel.show()
   }
@@ -391,7 +397,7 @@ class App {
     // Dispose UI
     this.slider.dispose()
     this.infoPanel.dispose()
-    this.introScreen.dispose()
+    this.introOverlay.dispose()
     this.introController.dispose()
     
     // Dispose core

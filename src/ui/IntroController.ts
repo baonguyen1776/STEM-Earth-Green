@@ -68,9 +68,7 @@ export class IntroController {
   private _cameraManager: CameraManager
   private _timeline: gsap.core.Timeline | null = null
   private _duration: number
-  private _startDistance: number
   private _endDistance: number
-  private _ease: string
   private _onComplete: (() => void) | null
   private _onUpdate: ((progress: number) => void) | null
   private _isPlaying: boolean = false
@@ -86,14 +84,9 @@ export class IntroController {
   constructor(options: IntroControllerOptions) {
     this._cameraManager = options.cameraManager
     this._duration = options.duration ?? 3
-    this._startDistance = options.startDistance ?? 20
     this._endDistance = options.endDistance ?? this._cameraManager.position.z
-    this._ease = options.ease ?? 'power2.out'
     this._onComplete = options.onComplete ?? null
     this._onUpdate = options.onUpdate ?? null
-    
-    // Don't auto-set position here - let main.ts control camera
-    // this.setStartPosition()
   }
 
   // PUBLIC GETTERS
@@ -128,16 +121,6 @@ export class IntroController {
 
   // PUBLIC METHODS
   /**
-   * Set camera to start position and ensure it looks at origin
-   */
-  setStartPosition(): void {
-    if (this._isDisposed) return
-    
-    this._cameraManager.setPosition(0, 0, this._startDistance)
-    this._cameraManager.setTarget(0, 0, 0)  // Ensure looking at Earth center
-  }
-
-  /**
    * Play intro animation
    * 
    * @returns Promise resolving when complete
@@ -150,9 +133,8 @@ export class IntroController {
     return new Promise((resolve) => {
       this._isPlaying = true
       
-      // Set start position and target before animation
-      this._cameraManager.setPosition(0, 0, this._startDistance)
-      this._cameraManager.setTarget(0, 0, 0)
+      // DON'T reset position here - use current camera position as start
+      // This allows main.ts to set custom start position (e.g., Earth at bottom)
       
       // Create timeline
       this._timeline = gsap.timeline({
@@ -182,13 +164,16 @@ export class IntroController {
       // Disable controls during animation
       this._cameraManager.disableControls()
       
-      // Animate camera position
-      const positionTarget = this._cameraManager.positionTarget
+      // Animate camera position smoothly to end position
+      const camera = this._cameraManager.camera
       
-      this._timeline.to(positionTarget, {
+      // Smooth animation: y goes back to 0, z goes to endDistance
+      this._timeline.to(camera.position, {
+        x: 0,
+        y: 0,
         z: this._endDistance,
         duration: this._duration,
-        ease: this._ease,
+        ease: 'power2.inOut',
       })
       
       // Optional: Add rotation effect
@@ -259,8 +244,9 @@ export class IntroController {
     this._isPlaying = false
     this._isCompleted = false
     
-    // Reset camera
-    this.setStartPosition()
+    // Reset camera to start position
+    this._cameraManager.setPosition(0, -1, 4)
+    this._cameraManager.setTarget(0, 0, 0)
     this._cameraManager.disableControls()
   }
 

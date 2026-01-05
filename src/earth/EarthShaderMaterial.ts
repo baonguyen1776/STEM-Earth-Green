@@ -102,8 +102,8 @@ const earthFragmentShader = `
     vec3 dayResult = blendedDayColor.rgb;
     
     // High ambient + strong diffuse for bright appearance
-    float brightAmbient = ambientIntensity * 1.5;
-    dayResult *= brightAmbient + combinedLight * 1.8;
+    float brightAmbient = ambientIntensity * 1.8;
+    dayResult *= brightAmbient + combinedLight * 2.0;
     
     // === SPECULAR HIGHLIGHTS (Ocean sparkle) ===
     vec3 halfDir = normalize(lightDirection + viewDir);
@@ -199,10 +199,10 @@ export class EarthShaderMaterial {
         
         lightDirection: { value: this._lightDirection },
         lightColor: { value: new THREE.Color(0xffffff) },  // Pure white sunlight
-        ambientIntensity: { value: 0.25 },  // Lower for cinematic contrast
+        ambientIntensity: { value: 0.5 },  // Brighter ambient for day_new texture
         pollutionLevel: { value: this._pollutionLevel / 100 },  // Convert 0-100 to 0-1
         pollutionTint: { value: new THREE.Color(0x4a3828) },
-        nightLightIntensity: { value: 1.5 },
+        nightLightIntensity: { value: 2.0 },
       },
       side: THREE.FrontSide,
     })

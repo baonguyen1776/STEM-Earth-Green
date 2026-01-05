@@ -7,11 +7,11 @@
  * 
  * Usage:
  * ```typescript
- * import { PollutionSlider, InfoPanel, IntroScreen, IntroController } from './ui'
+ * import { PollutionSlider, InfoPanel, SimpleOverlay, IntroController } from './ui'
  * 
  * const slider = new PollutionSlider({ onChange: (v) => earth.setPollutionLevel(v) })
  * const panel = new InfoPanel({ position: 'top-right' })
- * const intro = new IntroScreen({ onStart: () => introController.play() })
+ * const overlay = new SimpleOverlay({ onStart: () => introController.play() })
  * ```
  */
 
@@ -23,10 +23,10 @@ export type { PollutionSliderOptions } from './PollutionSlider'
 export { InfoPanel } from './InfoPanel'
 export type { InfoPanelOptions } from './InfoPanel'
 
-// Intro Screen
-export { IntroScreen } from './IntroScreen'
-export type { IntroScreenOptions } from './IntroScreen'
+// Simple Overlay (intro screen with text + button, main Earth visible behind)
+export { SimpleOverlay } from './SimpleOverlay'
+export type { SimpleOverlayOptions } from './SimpleOverlay'
 
-// Intro Controller
+// Intro Controller (camera animation)
 export { IntroController } from './IntroController'
 export type { IntroControllerOptions } from './IntroController'
