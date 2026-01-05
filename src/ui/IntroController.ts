@@ -11,6 +11,7 @@
  * - Callback-based completion
  */
 
+import * as THREE from 'three'
 import gsap from 'gsap'
 import type { CameraManager } from '../core/CameraManager'
 
@@ -32,6 +33,9 @@ export interface IntroControllerOptions {
   
   /** Easing function (default: 'power2.out') */
   ease?: string
+  
+  /** Earth group for scale animation */
+  earthGroup?: THREE.Group
   
   /** On complete callback */
   onComplete?: () => void
@@ -66,6 +70,7 @@ export interface IntroControllerOptions {
 export class IntroController {
   // PRIVATE PROPERTIES
   private _cameraManager: CameraManager
+  private _earthGroup: THREE.Group | null
   private _timeline: gsap.core.Timeline | null = null
   private _duration: number
   private _endDistance: number
@@ -83,6 +88,7 @@ export class IntroController {
    */
   constructor(options: IntroControllerOptions) {
     this._cameraManager = options.cameraManager
+    this._earthGroup = options.earthGroup ?? null
     this._duration = options.duration ?? 3
     this._endDistance = options.endDistance ?? this._cameraManager.position.z
     this._onComplete = options.onComplete ?? null
@@ -175,6 +181,17 @@ export class IntroController {
         duration: this._duration,
         ease: 'power2.inOut',
       })
+      
+      // Animate Earth scale from small to normal (grows as it "flies out")
+      if (this._earthGroup) {
+        this._timeline.to(this._earthGroup.scale, {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: this._duration,
+          ease: 'power2.inOut',
+        }, 0)  // Start at same time as camera animation
+      }
       
       // Optional: Add rotation effect
       // this._timeline.to(this._cameraManager.camera.rotation, {

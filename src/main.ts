@@ -218,6 +218,7 @@ class App {
     // Intro controller - animates camera from close to far (Earth "flies out")
     this.introController = new IntroController({
       cameraManager: this.cameraManager,
+      earthGroup: this.earth.group,  // Pass Earth for scale animation
       duration: 2.5,
       startDistance: 4,    // Start CLOSE to Earth (Earth at bottom of screen)
       endDistance: CAMERA_POSITION.z,  // End at normal viewing distance
@@ -227,6 +228,9 @@ class App {
     // Set camera to intro position (close to Earth)
     this.cameraManager.camera.position.set(0, -1, 4)
     this.cameraManager.camera.lookAt(0, 0, 0)
+    
+    // Set Earth to small scale for intro (will grow when clicking explore)
+    this.earth.group.scale.set(0.3, 0.3, 0.3)
     
     // Slider (hidden during intro)
     this.slider = new PollutionSlider({
